@@ -1,0 +1,354 @@
+﻿/* Name: HW1 - Movie Theater Menu App
+ * Desc: This program is desgined to create a user-friendly movie ticket booking system
+ * it follows a structed set of functional requirments to ensure a smooth intuitive user experince
+ * Author: Jesus Bustillos
+ */
+
+
+
+using System;
+using System.Collections.Generic;
+using System.Security.Cryptography.X509Certificates;
+using HW1_Movie_Theater;
+using static System.Collections.Specialized.BitVector32;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+
+
+namespace HW1_Movie_Theater;
+
+// Define ENUM for MPAA Ratings
+public enum MPAARating
+{
+    // G: General Audiences. All ages are admitted.
+    G,
+
+    // PG: Parental Guidance Suggested. Some material may not be suitable for children.
+    PG,
+
+    // PG-13: Parents Strongly Cautioned. Some material may be inappropriate for children under 13.
+    PG13,
+
+    // R: Restricted. Restricted to viewers over the age of 17 or 18.
+    R,
+
+    // NC-17: No One 17 and Under Admitted. Explicit content that is for adults only.
+    NC17
+}
+
+
+// Define Movie Struct
+public struct Movie
+{
+    // Property representing the title of the movie
+    public string Title;
+
+    // Property representing the price of a movie ticket
+    public double Price;
+
+    // Property representing the MPAA rating of the movie
+    public MPAARating Rating;
+
+    // Property representing the screen number where the movie is played
+    public int Screen;
+
+    // Properties representing three different showing times for the movie
+    public string Time1, Time2, Time3;
+}
+
+
+// Define a class to represent a ticket purchase
+public class TicketPurchase
+{
+    // Property representing the title of the movie for which the ticket is purchased
+    public string Title { get; set; }
+
+    // Property representing the screen number where the movie is being played
+    public int Screen { get; set; }
+
+    // Property representing the specific time of the movie showing
+    public string Time { get; set; }
+
+    // Property representing the price of an individual movie ticket
+    public double Price { get; set; }
+
+    // Property representing the quantity of tickets purchased for the movie
+    public int Quantity { get; set; }
+}
+
+
+class Program
+{
+    // Maximum number of tickets that can be bought per purchase
+    const int maxTicketsPurchase = 10;
+
+    // List of movies including Title, Ticket Price, Rating, Screen, and the 3 showing times
+    static Movie[] movies =
+    {
+    // Movie details for "Interstellar (2014)"
+    new Movie { Title = "Interstellar (2014)", Price = 12.50, Rating = MPAARating.PG13, Screen = 1, Time1 = "3:00 PM", Time2 = "6:00 PM", Time3 = "9:00 PM"},
+    
+    // Movie details for "Fast and The Furious: Tokyo Drift (2006)"
+    new Movie { Title = "Fast and The Furious: Tokyo Drift (2006)", Price = 9.50, Rating = MPAARating.PG13, Screen = 2, Time1 = "2:00 PM", Time2 = "5:00 PM", Time3 = "8:00 PM"},
+    
+    // Movie details for "White Man Can't Jump (1992)"
+    new Movie { Title = "White Man Can't Jump (1992)", Price = 1.25, Rating = MPAARating.R, Screen = 3, Time1 = "12:00 AM", Time2 = "2:00 PM", Time3 = "4:00 PM"},
+    
+    // Movie details for "Antz (1998)"
+    new Movie { Title = "Antz (1998)", Price = 3.75, Rating = MPAARating.PG, Screen = 4, Time1 = "1:00 PM", Time2 = "3:00 PM", Time3 = "6:00 PM"},
+    
+    // Movie details for "The Godfather (1972)"
+    new Movie { Title = "The Godfather (1972)", Price = 13.00, Rating = MPAARating.R, Screen = 5, Time1 = "5:00 PM", Time2 = "8:00 PM", Time3 = "11:00 PM"},
+    };
+
+
+
+    // Main method for the overall movie theater application
+    static void Main()
+    {
+        // Display a welcome greeting to the user
+        DisplayGreeting();
+
+        // List to store all valid Ticket Purchases from users
+        List<TicketPurchase> allTicketPurchases = new List<TicketPurchase>();
+
+        // Continue looping until the user decides not to make another purchase
+        do
+        {
+            // Display the list of available movies
+            DisplayMovieList();
+
+            // Get the index of the movie the user wants to watch
+            int selectedMovieIndex = GetSelectedMovieIndex();
+
+            // Confirm the user's movie selection
+            ConfirmMovieSelection(selectedMovieIndex);
+
+            // Display detailed information about the selected movie
+            DisplayMovieDetails(selectedMovieIndex);
+
+            // Get the selected time for the movie
+            string selectedTime = GetSelectedTime(movies[selectedMovieIndex]);
+
+            // Confirm the user's booking, display details, and store the purchase information
+            ConfirmBooking(selectedMovieIndex, selectedTime, allTicketPurchases);
+
+        } while (PromptForAdditionalPurchase()); // Continue the loop if the user wants to make another purchase
+
+        // Display a receipt containing all the ticket purchase details
+        DisplayReceipt(allTicketPurchases);
+
+        // Thank the user for choosing the movie theater and end the program
+        Console.WriteLine("\nThank you for choosing our movie theater! Enjoy the show!");
+    }
+
+    // Displays a greeting statement to the user when they start the program
+    static void DisplayGreeting()
+    {
+        Console.WriteLine("Welcome to the Movie Theater! Please choose a movie.");
+    }
+
+    // Displays movie list to the user, presents Title and price per ticket 
+    static void DisplayMovieList()
+    {
+        Console.WriteLine("\n---Movies---");
+        for (int i = 0; i < movies.Length; i++) // index starts 1 instead of 0 for user readability 
+        {
+            Console.WriteLine($"{i + 1}. {movies[i].Title} at {movies[i].Price.ToString("C")} per ticket");
+        }
+    }
+
+    // Gets the index of the movie the user wants to watch and presents it to the user.
+    static int GetSelectedMovieIndex()
+    {
+        int selection;
+        do
+        {
+            // Prompt the user to enter the number of the movie they want to watch
+            Console.WriteLine("\nEnter the number of the movie you please to watch:");
+
+            // Read the user's input
+            string input = Console.ReadLine();
+
+            /* User inputs the number from the selected and present movie index.
+             * A try-catch block is used to handle invalid user selection because the valid indexes are only from 1 to 5.
+             */
+            try
+            {
+                // Convert the input to an integer
+                selection = int.Parse(input);
+
+                // Check if the selection is a valid index (between 1 and the number of movies)
+                if (selection >= 1 && selection <= movies.Length)
+                {
+                    // Return the selected index adjusted to match the array index
+                    return selection - 1;
+                }
+                else
+                {
+                    // Display an error message for an invalid selection
+                    Console.WriteLine("Invalid selection. Please choose a valid number.");
+                }
+            }
+            catch (FormatException)
+            {
+                // Display an error message for invalid input (non-numeric)
+                Console.WriteLine("\nInvalid input, please type a numerical value and a movie selection (1-5).");
+            }
+
+        } while (true);
+    }
+
+
+    // Prints out confrimed movie slelection
+    static void ConfirmMovieSelection(int movieIndex)
+    {
+        // Prints out Movie title, rating, and movie price per ticket 
+        Movie selectedMovie = movies[movieIndex];
+        Console.WriteLine($"\nYou have selected {selectedMovie.Title} with a rating of {selectedMovie.Rating}. The cost of each ticket will be {selectedMovie.Price.ToString("C")}.");
+    }
+
+    // Displays details of the selected movie to the user
+    static void DisplayMovieDetails(int movieIndex)
+    {
+        // Retrieve the selected movie based on the provided index
+        Movie selectedMovie = movies[movieIndex];
+
+        // Display the movie title and the screen it is playing on
+        Console.WriteLine($"\n{selectedMovie.Title} is playing on screen {selectedMovie.Screen}.");
+    }
+
+
+    // Gets the user's selected movie time
+    static string GetSelectedTime(Movie selectedMovie)
+    {
+        // Array of valid options for movie time selection
+        string[] validOptions = { "1", "2", "3" };
+
+        // Loop to ensure the user provides a valid input
+        while (true)
+        {
+            // Display the available movie times for the selected movie
+            Console.WriteLine($"1.  {selectedMovie.Time1}");
+            Console.WriteLine($"2.  {selectedMovie.Time2}");
+            Console.WriteLine($"3.  {selectedMovie.Time3}");
+
+            // Prompt the user to enter the number corresponding to their selected show time
+            Console.Write($"\nEnter the number of your selected show time for {selectedMovie.Title}: ");
+            string selection = Console.ReadLine();
+
+            // Check if the user's selection is a valid option
+            if (Array.Exists(validOptions, option => option == selection))
+            {
+                // Use a switch statement to determine the selected movie time and return it in a valid format
+                switch (selection)
+                {
+                    case "1":
+                        return selectedMovie.Time1;
+                    case "2":
+                        return selectedMovie.Time2;
+                    case "3":
+                        return selectedMovie.Time3;
+                    default:
+                        return "Invalid Time"; // This should not be reached, but it provides a default return just in case
+                }
+            }
+            else
+            {
+                // Display an error message for an invalid selection
+                Console.WriteLine("Invalid selection. Please choose a valid number.");
+            }
+        }
+    }
+
+
+    // Prints out a confirmation and gathers user input for ticket purchase
+    static void ConfirmBooking(int movieIndex, string selectedTime, List<TicketPurchase> ticketPurchases)
+    {
+        // Get the selected movie based on the index
+        Movie selectedMovie = movies[movieIndex];
+
+        // Display a confirmation message with selected movie details
+        Console.WriteLine($"\nYou have selected to see the movie {selectedMovie.Title} on screen {selectedMovie.Screen} at {selectedTime}.");
+
+        // Use a loop to repeatedly prompt the user for the number of tickets until a valid input is provided
+        while (true)
+        {
+            // Prompt the user for the number of tickets to purchase
+            Console.Write($"\nEnter the number of tickets to purchase (maximum {maxTicketsPurchase}): ");
+
+            // Check if the user input is a valid integer within the allowed range
+            if (int.TryParse(Console.ReadLine(), out int numberOfTickets) && numberOfTickets > 0 && numberOfTickets <= maxTicketsPurchase)
+            {
+                // Calculate the total price for the selected number of tickets
+                double totalPrice = selectedMovie.Price * numberOfTickets;
+
+                // Display the cost for each ticket and the total price
+                Console.WriteLine($"\nThe cost for each ticket will be {selectedMovie.Price:C}. The total price for {numberOfTickets} tickets is {totalPrice:C}.");
+
+                // Create a new TicketPurchase object and add it to the list of ticket purchases
+                ticketPurchases.Add(new TicketPurchase
+                {
+                    Title = selectedMovie.Title,
+                    Screen = selectedMovie.Screen,
+                    Time = selectedTime,  // Use the selectedTime parameter here
+                    Price = selectedMovie.Price,
+                    Quantity = numberOfTickets
+                });
+
+                // Exit the loop since a valid number of tickets has been entered
+                break;
+            }
+            else
+            {
+                // Display an error message for invalid input
+                Console.WriteLine($"Invalid number of tickets. Please enter a number between 1 and {maxTicketsPurchase}.");
+            }
+        }
+    }
+
+
+
+    // Asks the user if they want to make another booking and returns their response as a boolean.
+    static bool PromptForAdditionalPurchase()
+    {
+        // Display a prompt asking the user if they want to make another booking
+        Console.Write("\nDo you want to make another booking? (Y/N): ");
+
+        // Read the user's response and convert it to uppercase for case-insensitivity
+        string response = Console.ReadLine().ToUpper();
+
+        // Return true if the user's response is 'Y' (Yes), otherwise return false
+        return response == "Y";
+    }
+
+    // Displays a detailed receipt of all ticket purchases, including total prices and a grand total.
+    static void DisplayReceipt(List<TicketPurchase> ticketPurchases)
+    {
+        // Display the heading for the receipt
+        Console.WriteLine("\nReceipt");
+        Console.WriteLine("------------------------------------------------------------------------------------------------------------");
+        Console.WriteLine("{0,-30} {1,-15} {2,-15} {3,-15} {4,-15} {5,-15}", "Title", "Screen", "Time", "Price", "Quantity", "Subtotal");
+        Console.WriteLine("------------------------------------------------------------------------------------------------------------");
+
+        // Initialize the grand total variable
+        double grandTotal = 0;
+
+        // Iterate through each ticket purchase in the list
+        foreach (var purchase in ticketPurchases)
+        {
+            // Calculate the subtotal for each ticket purchase
+            double subtotal = purchase.Price * purchase.Quantity;
+
+            // Add the subtotal to the grand total
+            grandTotal += subtotal;
+
+            // Display detailed information for each ticket purchase
+            Console.WriteLine("{0,-30} {1,-15} {2,-15} {3,-15:C} {4,-15} {5,-15:C}",
+                purchase.Title, purchase.Screen, purchase.Time, purchase.Price, purchase.Quantity, subtotal);
+        }
+
+        // Display the grand total at the end of the receipt
+        Console.WriteLine("------------------------------------------------------------------------------------------------------------");
+        Console.WriteLine("Grand Total: {0:C}", grandTotal);
+    }
+}
